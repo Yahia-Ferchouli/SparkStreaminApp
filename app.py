@@ -48,6 +48,18 @@ def fetch_type_of_travel_data():
 
     return df
 
+
+def fetch_loyalty_by_age_data():
+    db_connection_str = 'mysql+pymysql://root:12345678@localhost:3306/spark_streaming_db'
+
+    engine = create_engine(db_connection_str)
+    query = "SELECT Age, LoyalCount, DisloyalCount FROM loyalty_by_age ORDER BY Age"
+    df = pd.read_sql(query, engine)
+
+    return df
+
+
+st.set_page_config(layout="wide")
 def main():
     st.title('Real-time KPIs')
 
@@ -97,6 +109,22 @@ def main():
     )
     fig3.update_layout(title_text='Type of Travel Counts')
 
+    loyalty_df = fetch_loyalty_by_age_data()
+    loyalty_df['LoyalCount'] = pd.to_numeric(
+        loyalty_df['LoyalCount'], errors='coerce')
+    loyalty_df['DisloyalCount'] = pd.to_numeric(
+        loyalty_df['DisloyalCount'], errors='coerce')
+
+    fig4 = go.Figure(
+        data=[
+            go.Bar(name='Loyal',
+                   x=loyalty_df['Age'], y=loyalty_df['LoyalCount']),
+            go.Bar(name='Disloyal',
+                   x=loyalty_df['Age'], y=loyalty_df['DisloyalCount'])
+        ]
+    )
+    fig4.update_layout(title_text='Loyalty by Age', barmode='stack')
+
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(fig1, use_container_width=True)
@@ -104,9 +132,15 @@ def main():
     with col2:
         st.plotly_chart(bar_fig, use_container_width=True)
 
-    st.plotly_chart(fig3, use_container_width=True)
+    col3, col4 = st.columns(2)
 
-    time.sleep(5)
+    with col3:
+        st.plotly_chart(fig3, use_container_width=True)
+
+    with col4:
+        st.plotly_chart(fig4, use_container_width=True)
+
+    time.sleep(2)
     st.experimental_rerun()
 
 if __name__ == '__main__':
